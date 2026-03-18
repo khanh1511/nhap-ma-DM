@@ -1,0 +1,46 @@
+{
+  "DM": {
+    "columns": [
+      "A1",
+      "AA.11111",
+      "Phát rừng loại I bằng thủ công, mật độ cây TC/100m2: 0 cây",
+      "100m2"
+    ],
+    "sample": [
+      {
+        "A1": "A2",
+        "AA.11111": "AA.11112",
+        "Phát rừng loại I bằng thủ công, mật độ cây TC/100m2: 0 cây": "Phát rừng loại I bằng thủ công, mật độ cây TC/100m2: ≤2 cây",
+        "100m2": "100m2"
+      },
+      {
+        "A1": "A3",
+        "AA.11111": "AA.11113",
+        "Phát rừng loại I bằng thủ công, mật độ cây TC/100m2: 0 cây": "Phát rừng loại I bằng thủ công, mật độ cây TC/100m2: ≤3 cây",
+        "100m2": "100m2"
+      }
+    ]
+  },
+  "TH": {
+    "columns": [
+      "STT",
+      "Mô tả công việc mời thầu",
+      "Khối lượng mời thầu",
+      "Đơn vị tính"
+    ],
+    "sample": [
+      {
+        "STT": 1,
+        "Mô tả công việc mời thầu": "HỒ HÓC CỦA",
+        "Khối lượng mời thầu": "",
+        "Đơn vị tính": ""
+      },
+      {
+        "STT": "1.1",
+        "Mô tả công việc mời thầu": "I. ĐẬP ĐẤT:",
+        "Khối lượng mời thầu": "",
+        "Đơn vị tính": ""
+      }
+    ]
+  }
+}
