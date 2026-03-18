@@ -101,8 +101,9 @@ with col1:
     # Chuẩn bị dữ liệu hiển thị (Thêm cột trạng thái)
     display_df = st.session_state.df_th[['STT', 'Mô tả công việc mời thầu', 'Ma_Dinh_Muc_Ket_Qua']].copy()
     display_df['Trạng thái'] = display_df['Ma_Dinh_Muc_Ket_Qua'].apply(lambda x: "✅ Đã gán" if str(x).strip() else "⏳ Chờ")
-    display_df.insert(0, 'Đang chọn', ['👉' if i == st.session_state.selected_task_idx else '' for i in display_df.index])
-    display_df = display_df[['Đang chọn', 'STT', 'Mô tả công việc mời thầu', 'Trạng thái']]
+    display_df.insert(0, '👉', ['👉' if i == st.session_state.selected_task_idx else '' for i in display_df.index])
+    display_df = display_df[['👉', 'STT', 'Mô tả công việc mời thầu', 'Trạng thái']]
+    display_df = display_df.rename(columns={'Mô tả công việc mời thầu': 'Nội dung công việc'})
     
     # Cho phép người dùng chuyển dòng bằng Selectbox
     task_options = []
@@ -140,7 +141,13 @@ with col1:
         height=500,
         on_select="rerun",
         selection_mode="single-row",
-        hide_index=True
+        hide_index=True,
+        column_config={
+            "👉": st.column_config.TextColumn("👉", width="small"),
+            "STT": st.column_config.TextColumn("STT", width="small"),
+            "Trạng thái": st.column_config.TextColumn("Trạng thái", width="small"),
+            "Nội dung công việc": st.column_config.TextColumn("Nội dung công việc", width="large")
+        }
     )
     
     if len(event.selection.rows) > 0:
