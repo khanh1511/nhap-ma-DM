@@ -13,17 +13,38 @@ st.markdown("""
         font-weight: 700;
         color: #1E3A8A;
         margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #e5e7eb;
     }
     .task-card {
-        padding: 1rem;
-        border-radius: 0.5rem;
-        background-color: #F3F4F6;
-        border-left: 5px solid #3B82F6;
-        margin-bottom: 1rem;
+        padding: 1.5rem;
+        border-radius: 0.75rem;
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        border-left: 6px solid #2563eb;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
     }
+    .task-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #111827;
+        margin: 0.5rem 0;
+        line-height: 1.4;
+    }
+    .task-status { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed #93c5fd; }
     .highlight-text {
         color: #D97706;
         font-weight: bold;
+    }
+    /* Tweak st.tabs slightly */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 2rem;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 3.5rem;
+        white-space: pre-wrap;
+        font-size: 1.1rem;
+        font-weight: 600;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -69,7 +90,7 @@ if 'df_dm' not in st.session_state or 'df_th' not in st.session_state:
 
 
 # --- Giao diện chia cột ---
-col1, col2 = st.columns([1, 1.2])
+col1, col2 = st.columns([1, 1.8])
 
 with col1:
     st.subheader("📋 Danh sách công việc cần tra mã")
@@ -138,56 +159,67 @@ with col2:
         
         st.markdown(f"""
         <div class="task-card">
-            <strong>Đang chọn STT:</strong> <span class="highlight-text">{current_task['STT']}</span> <br/>
-            <strong>Mô tả:</strong> <span class="highlight-text">{current_task['Mô tả công việc mời thầu']}</span> <br/>
-            <strong>Mã đã chọn (hiện tại):</strong> <span style="color:#DC2626; font-weight:bold;">{current_task['Ma_Dinh_Muc_Ket_Qua']}</span>
-            - {current_task['Ten_Dinh_Muc_Ket_Qua']}
+            <div><span style="background:#2563eb;color:white;padding:2px 8px;border-radius:12px;font-size:0.8rem;font-weight:bold;">STT: {current_task['STT']}</span></div>
+            <div class="task-title">{current_task['Mô tả công việc mời thầu']}</div>
+            <div class="task-status">
+                <strong>Mã đã chọn:</strong> 
+                <span style="color:#dc2626; font-weight:bold; font-size:1.1rem; background:#fee2e2; padding:2px 8px; border-radius:4px; margin-left:4px;">
+                    {current_task['Ma_Dinh_Muc_Ket_Qua'] if str(current_task['Ma_Dinh_Muc_Ket_Qua']).strip() else 'Chưa có'}
+                </span>
+                <span style="margin-left:8px; color:#4b5563; font-style:italic;">{current_task['Ten_Dinh_Muc_Ket_Qua']}</span>
+            </div>
         </div>
         """, unsafe_allow_html=True)
         
-        # Nhập thủ công
-        st.write("---")
-        st.write("**Nhập mã thủ công (nếu đã biết mã):**")
-        col_man1, col_man2 = st.columns([3, 1])
-        with col_man1:
-            manual_code = st.text_input("Gõ mã định mức (ví dụ: AE.11111):", key=f"manual_{idx}")
-        with col_man2:
-            st.write("") # padding
-            st.write("") # padding
-            if st.button("Lưu mã này", key=f"btn_manual_{idx}"):
-                if manual_code.strip():
-                    st.session_state.df_th.at[idx, 'Ma_Dinh_Muc_Ket_Qua'] = manual_code.strip()
-                    st.session_state.df_th.at[idx, 'Ten_Dinh_Muc_Ket_Qua'] = "(Nhập thủ công)"
-                    go_to_next_task()
-                    st.rerun()
+        tab1, tab2 = st.tabs(["🔍 Tìm kiếm thuật toán thông minh", "✍️ Nhập mã định mức thủ công"])
+        
+        with tab1:
+            st.caption("Hệ thống sẽ tự động gợi ý mã dựa trên mô tả công việc. Bạn có thể sửa đổi từ khóa để tìm chính xác hơn.")
+            search_query = st.text_input("Từ khóa tìm kiếm:", value=str(current_task['Mô tả công việc mời thầu']), key=f"search_{idx}")
+            
+            if search_query:
+                with st.spinner("Đang tìm kết quả phù hợp nhất..."):
+                    results = search_dm(search_query, st.session_state.df_dm)
+                    
+                if not results.empty:
+                    st.success(f"Tìm thấy **{len(results)}** kết quả liên quan:", icon="✅")
+                    for r_idx, r_row in results.iterrows():
+                        with st.container(border=True):
+                            ccol1, ccol2 = st.columns([4, 1])
+                            with ccol1:
+                                st.markdown(f"""
+                                    <div style="font-size:1.05rem; font-weight:600; color:#1f2937;">{r_row['ten_cong_viec']}</div>
+                                    <div style="color:#4b5563; margin-top:0.4rem;">
+                                        <span style="display:inline-block; background:#f3f4f6; padding:2px 8px; border-radius:4px; border:1px solid #d1d5db; margin-right:8px; font-family:monospace; color:#1d4ed8; font-weight:bold;">Mã: {r_row['ma_dinh_muc']}</span>
+                                        <span style="display:inline-block; background:#f3f4f6; padding:2px 8px; border-radius:4px; border:1px solid #d1d5db; color:#047857; font-weight:500;">ĐVT: {r_row['don_vi_tinh']}</span>
+                                    </div>
+                                """, unsafe_allow_html=True)
+                            with ccol2:
+                                st.write("") # padding vertical
+                                if st.button("Chọn mã này", key=f"btn_{idx}_{r_row['ma_dinh_muc']}", use_container_width=True, type="primary"):
+                                    st.session_state.df_th.at[idx, 'Ma_Dinh_Muc_Ket_Qua'] = r_row['ma_dinh_muc']
+                                    st.session_state.df_th.at[idx, 'Ten_Dinh_Muc_Ket_Qua'] = r_row['ten_cong_viec']
+                                    go_to_next_task()
+                                    st.rerun()
                 else:
-                    st.warning("Vui lòng nhập mã!")
-        
-        st.write("---")
-        st.write("**Hoặc Tìm kiếm gợi ý (từ file DM.xlsx):**")
-        # Khung tìm kiếm, mặc định lấy mô tả công việc
-        search_query = st.text_input("Sửa từ khóa để tìm kiếm sát hơn:", value=str(current_task['Mô tả công việc mời thầu']), key=f"search_{idx}")
-        
-        if search_query:
-            with st.spinner("Đang tìm..."):
-                results = search_dm(search_query, st.session_state.df_dm)
-                
-            if not results.empty:
-                for r_idx, r_row in results.iterrows():
-                    with st.container(border=True):
-                        ccol1, ccol2 = st.columns([4, 1])
-                        with ccol1:
-                            st.write(f"**Mã ĐM:** `{r_row['ma_dinh_muc']}` | **ĐVT:** {r_row['don_vi_tinh']}")
-                            st.write(f"**Tên:** {r_row['ten_cong_viec']}")
-                        with ccol2:
-                            if st.button("Chọn mã này", key=f"btn_{idx}_{r_row['ma_dinh_muc']}"):
-                                st.session_state.df_th.at[idx, 'Ma_Dinh_Muc_Ket_Qua'] = r_row['ma_dinh_muc']
-                                st.session_state.df_th.at[idx, 'Ten_Dinh_Muc_Ket_Qua'] = r_row['ten_cong_viec']
-                                # Chuyển sang task tiếp theo
-                                go_to_next_task()
-                                st.rerun()
-            else:
-                st.info("Không tìm thấy mã định mức nào phù hợp với từ khóa này.")
+                    st.info("Không tìm thấy mã định mức nào phù hợp. Hãy thử rút gọn từ khóa tìm kiếm.", icon="ℹ️")
+                    
+        with tab2:
+            st.info("Sử dụng tính năng này khi bạn đã biết chắc chắn mã định mức cần điền (VD: lấy từ file excel cũ, từ trí nhớ...).", icon="💡")
+            col_man1, col_man2 = st.columns([3, 1])
+            with col_man1:
+                manual_code = st.text_input("Gõ chính xác mã định mức (ví dụ: AE.11111):", key=f"manual_{idx}")
+            with col_man2:
+                st.write("") # padding
+                st.write("") # padding
+                if st.button("Lưu mã này", key=f"btn_manual_{idx}", use_container_width=True, type="primary"):
+                    if manual_code.strip():
+                        st.session_state.df_th.at[idx, 'Ma_Dinh_Muc_Ket_Qua'] = manual_code.strip()
+                        st.session_state.df_th.at[idx, 'Ten_Dinh_Muc_Ket_Qua'] = "(Nhập thủ công)"
+                        go_to_next_task()
+                        st.rerun()
+                    else:
+                        st.warning("Vui lòng nhập mã trước khi lưu!")
     else:
         st.info("Vui lòng chọn một công việc bên trái để bắt đầu tra mã.")
 
