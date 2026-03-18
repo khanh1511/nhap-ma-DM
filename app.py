@@ -78,15 +78,8 @@ with col1:
     # Chuẩn bị dữ liệu hiển thị (Thêm cột trạng thái)
     display_df = st.session_state.df_th[['STT', 'Mô tả công việc mời thầu', 'Ma_Dinh_Muc_Ket_Qua']].copy()
     display_df['Trạng thái'] = display_df['Ma_Dinh_Muc_Ket_Qua'].apply(lambda x: "✅ Đã gán" if str(x).strip() else "⏳ Chờ")
-    display_df = display_df[['STT', 'Mô tả công việc mời thầu', 'Trạng thái']]
-    
-    # Định dạng highlight dòng đang chọn
-    def highlight_current_row(row):
-        if row.name == st.session_state.selected_task_idx:
-            return ['background-color: #FEF08A; font-weight: bold; color: black'] * len(row)
-        return [''] * len(row)
-
-    styled_df = display_df.style.apply(highlight_current_row, axis=1)
+    display_df.insert(0, 'Đang chọn', ['👉' if i == st.session_state.selected_task_idx else '' for i in display_df.index])
+    display_df = display_df[['Đang chọn', 'STT', 'Mô tả công việc mời thầu', 'Trạng thái']]
     
     # Cho phép người dùng chuyển dòng bằng Selectbox
     task_options = []
@@ -96,7 +89,7 @@ with col1:
         task_options.append((idx, task_str))
         
     selected_option = st.selectbox(
-        "Nhảy đến công việc cụ thể:", 
+        "Nhảy đến công việc cụ thể (hoặc click vào dòng trong bảng bên dưới):", 
         options=task_options, 
         format_func=lambda x: x[1],
         index=0 if st.session_state.selected_task_idx is None else st.session_state.selected_task_idx
@@ -106,7 +99,21 @@ with col1:
         st.session_state.selected_task_idx = selected_option[0]
         st.rerun()
         
-    st.dataframe(styled_df, use_container_width=True, height=500)
+    event = st.dataframe(
+        display_df, 
+        use_container_width=True, 
+        height=500,
+        on_select="rerun",
+        selection_mode="single-row",
+        hide_index=True
+    )
+    
+    if len(event.selection.rows) > 0:
+        clicked_idx = event.selection.rows[0]
+        actual_idx = display_df.index[clicked_idx]
+        if actual_idx != st.session_state.selected_task_idx:
+            st.session_state.selected_task_idx = actual_idx
+            st.rerun()
     
 with col2:
     st.subheader("🔍 Tìm kiếm và Ghép Mã")
