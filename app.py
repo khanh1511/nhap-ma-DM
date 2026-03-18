@@ -224,12 +224,26 @@ with col2:
                     
                 if not results.empty:
                     st.success(f"Tìm thấy **{len(results)}** kết quả liên quan:", icon="✅")
+                    
+                    import re
+                    # Tách từ khóa thành các từ đơn để highlight, bỏ qua từ quá ngắn như 'bê', 'm'...
+                    keywords = [k.strip() for k in search_query.split() if len(k.strip()) > 1]
+                    
+                    def highlight_text(text, keywords):
+                        if not keywords: return text
+                        # Sắp xếp từ khóa theo chiều dài giảm dần để tránh highlight chồng chéo (nếu có từ bao hàm nhau)
+                        keywords.sort(key=len, reverse=True)
+                        pattern = re.compile(f"({'|'.join(map(re.escape, keywords))})", re.IGNORECASE)
+                        # Dùng tag <mark> của HTML để bôi nền phản quang
+                        return pattern.sub(r'<mark style="background-color: #fef08a; padding: 0 2px; border-radius: 2px;">\1</mark>', text)
+
                     for r_idx, r_row in results.iterrows():
                         with st.container(border=True):
                             ccol1, ccol2 = st.columns([4, 1])
                             with ccol1:
+                                highlighted_name = highlight_text(r_row['ten_cong_viec'], keywords)
                                 st.markdown(f"""
-                                    <div style="font-size:1.05rem; font-weight:600; color:#1f2937;">{r_row['ten_cong_viec']}</div>
+                                    <div style="font-size:1.05rem; font-weight:600; color:#1f2937;">{highlighted_name}</div>
                                     <div style="color:#4b5563; margin-top:0.4rem;">
                                         <span style="display:inline-block; background:#f3f4f6; padding:2px 8px; border-radius:4px; border:1px solid #d1d5db; margin-right:8px; font-family:monospace; color:#1d4ed8; font-weight:bold;">Mã: {r_row['ma_dinh_muc']}</span>
                                         <span style="display:inline-block; background:#f3f4f6; padding:2px 8px; border-radius:4px; border:1px solid #d1d5db; color:#047857; font-weight:500;">ĐVT: {r_row['don_vi_tinh']}</span>
