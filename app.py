@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import io
+import os
 from utils import load_data, search_dm
 
 st.set_page_config(page_title="Hỗ Trợ Tra Mã Định Mức", layout="wide")
@@ -55,14 +56,44 @@ st.markdown('<div class="main-header">Ứng Dụng Hỗ Trợ Tra Mã Định M�
 if 'selected_task_idx' not in st.session_state:
     st.session_state.selected_task_idx = None
 
+def save_session_state():
+    """Lưu trữ trạng thái hiện tại."""
+    if 'df_th' in st.session_state and 'df_dm' in st.session_state:
+        st.session_state.df_th.to_pickle("autosave_th.pkl")
+        st.session_state.df_dm.to_pickle("autosave_dm.pkl")
+        with open("autosave_idx.txt", "w") as f:
+            f.write(str(st.session_state.selected_task_idx))
+
 def go_to_next_task():
     """Chuyển sang công việc kế tiếp"""
     if st.session_state.selected_task_idx is not None:
         if st.session_state.selected_task_idx < len(st.session_state.df_th) - 1:
             st.session_state.selected_task_idx += 1
+    save_session_state()
+
+# --- Khôi phục phiên làm việc ---
+st.sidebar.header("🔄 Phục hồi công việc")
+if os.path.exists("autosave_th.pkl") and os.path.exists("autosave_dm.pkl"):
+    st.sidebar.info("Phát hiện phiên làm việc dở dang gần đây.", icon="💾")
+    if st.sidebar.button("Tiếp tục công việc đang dở", type="primary", use_container_width=True):
+        try:
+            st.session_state.df_dm = pd.read_pickle("autosave_dm.pkl")
+            st.session_state.df_th = pd.read_pickle("autosave_th.pkl")
+            if os.path.exists("autosave_idx.txt"):
+                with open("autosave_idx.txt", "r") as f:
+                    idx_val = f.read().strip()
+                    st.session_state.selected_task_idx = int(idx_val) if idx_val.isdigit() else 0
+            else:
+                st.session_state.selected_task_idx = 0
+            st.sidebar.success("Khôi phục thành công!")
+            st.rerun()
+        except Exception as e:
+            st.sidebar.error("Không thể khôi phục dữ liệu.")
+
+st.sidebar.markdown("---")
 
 # --- Sidebar Nạp dữ liệu ---
-st.sidebar.header("📂 Nạp Dữ Liệu")
+st.sidebar.header("📂 Nạp Dữ Liệu Mới")
 uploaded_dm = st.sidebar.file_uploader("1. Chọn file Từ điển (DM.xlsx)", type=['xlsx'])
 uploaded_th = st.sidebar.file_uploader("2. Chọn file cần tra mã (Bang TH.xlsx)", type=['xlsx'])
 
@@ -80,6 +111,7 @@ if uploaded_dm and uploaded_th:
                     st.session_state.df_th['Ten_Dinh_Muc_Ket_Qua'] = ''
                 
                 st.session_state.selected_task_idx = 0
+                save_session_state()
                 st.sidebar.success("Nạp dữ liệu thành công!")
             except Exception as e:
                 st.sidebar.error(f"Lỗi nạp dữ liệu: {e}")
@@ -121,6 +153,7 @@ with col1:
     
     if selected_option and selected_option[0] != st.session_state.selected_task_idx:
         st.session_state.selected_task_idx = selected_option[0]
+        save_session_state()
         st.rerun()
 
     if focus_mode and st.session_state.selected_task_idx is not None:
@@ -155,6 +188,7 @@ with col1:
         actual_idx = display_df.index[clicked_idx]
         if actual_idx != st.session_state.selected_task_idx:
             st.session_state.selected_task_idx = actual_idx
+            save_session_state()
             st.rerun()
     
 with col2:
