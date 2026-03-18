@@ -75,6 +75,8 @@ with col1:
     st.subheader("📋 Danh sách công việc cần tra mã")
     st.caption("Danh sách các công việc. Dòng màu vàng là công việc đang được chọn.")
     
+    focus_mode = st.checkbox("🔍 Tập trung hiển thị công việc hiện tại (Tự động cuộn)", value=True)
+    
     # Chuẩn bị dữ liệu hiển thị (Thêm cột trạng thái)
     display_df = st.session_state.df_th[['STT', 'Mô tả công việc mời thầu', 'Ma_Dinh_Muc_Ket_Qua']].copy()
     display_df['Trạng thái'] = display_df['Ma_Dinh_Muc_Ket_Qua'].apply(lambda x: "✅ Đã gán" if str(x).strip() else "⏳ Chờ")
@@ -98,9 +100,21 @@ with col1:
     if selected_option and selected_option[0] != st.session_state.selected_task_idx:
         st.session_state.selected_task_idx = selected_option[0]
         st.rerun()
+
+    if focus_mode and st.session_state.selected_task_idx is not None:
+        start_idx = max(0, st.session_state.selected_task_idx - 5)
+        end_idx = min(len(display_df), st.session_state.selected_task_idx + 15)
+        display_df = display_df.iloc[start_idx:end_idx]
+
+    def highlight_row(row):
+        if row.name == st.session_state.selected_task_idx:
+            return ['background-color: #FEF08A; font-weight: bold; color: #b91c1c'] * len(row)
+        return [''] * len(row)
+
+    styled_df = display_df.style.apply(highlight_row, axis=1)
         
     event = st.dataframe(
-        display_df, 
+        styled_df, 
         use_container_width=True, 
         height=500,
         on_select="rerun",
